@@ -16,3 +16,9 @@ assert len(h) == 0
 assert len(h2) == 1
 assert h2['a'] == 'b'
 h3 =  h2.set('b', 10)
+print(h3)
+print(h3['b'])
+
+print(list(h3.items()))
+print(list(h3.keys()))
+print(list(h3.values()))
