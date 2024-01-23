@@ -131,4 +131,29 @@ PyObject * _PyHamt_NewIterValues(PyHamtObject *o);
 /* Return a Items iterator over "o". */
 PyObject * _PyHamt_NewIterItems(PyHamtObject *o);
 
+// added by tao
+
+PyHamtObject *hamt_alloc(void);
+
+int hamt_tp_traverse(PyHamtObject *self, visitproc visit, void *arg);
+
+void hamt_tp_dealloc(PyHamtObject *self);
+
+PyObject * hamt_tp_richcompare(PyObject *v, PyObject *w, int op);
+
+PyObject *
+hamt_py_get(PyHamtObject *self, PyObject *args);
+
+PyObject *
+hamt_py_set(PyHamtObject *self, PyObject *args);
+PyObject *
+hamt_py_delete(PyHamtObject *self, PyObject *key);
+
+PyObject *
+hamt_py_items(PyHamtObject *self, PyObject *args);
+PyObject *
+hamt_py_values(PyHamtObject *self, PyObject *args);
+PyObject *
+hamt_py_keys(PyHamtObject *self, PyObject *Py_UNUSED(args));
+
 #endif /* !Py_INTERNAL_HAMT_H */

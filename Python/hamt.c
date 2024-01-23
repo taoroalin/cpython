@@ -327,7 +327,7 @@ typedef struct {
 } PyHamtNode_Collision;
 
 
-static PyHamtObject *
+PyHamtObject *
 hamt_alloc(void);
 
 static PyHamtNode *
@@ -1119,7 +1119,7 @@ hamt_node_bitmap_traverse(PyHamtNode_Bitmap *self, visitproc visit, void *arg)
     return 0;
 }
 
-static void
+void
 hamt_node_bitmap_dealloc(PyHamtNode_Bitmap *self)
 {
     /* Bitmap's tp_dealloc */
@@ -2410,7 +2410,7 @@ _PyHamt_Len(PyHamtObject *o)
     return o->h_count;
 }
 
-static PyHamtObject *
+PyHamtObject *
 hamt_alloc(void)
 {
     PyHamtObject *o;
@@ -2639,14 +2639,14 @@ hamt_tp_clear(PyHamtObject *self)
 }
 
 
-static int
+int
 hamt_tp_traverse(PyHamtObject *self, visitproc visit, void *arg)
 {
     Py_VISIT(self->h_root);
     return 0;
 }
 
-static void
+void
 hamt_tp_dealloc(PyHamtObject *self)
 {
     if (self == _empty_hamt) {
@@ -2667,7 +2667,7 @@ hamt_tp_dealloc(PyHamtObject *self)
 }
 
 
-static PyObject *
+PyObject *
 hamt_tp_richcompare(PyObject *v, PyObject *w, int op)
 {
     if (!PyHamt_Check(v) || !PyHamt_Check(w) || (op != Py_EQ && op != Py_NE)) {
@@ -2728,7 +2728,7 @@ hamt_tp_iter(PyHamtObject *self)
     return _PyHamt_NewIterKeys(self);
 }
 
-static PyObject *
+PyObject *
 hamt_py_set(PyHamtObject *self, PyObject *args)
 {
     PyObject *key;
@@ -2741,7 +2741,7 @@ hamt_py_set(PyHamtObject *self, PyObject *args)
     return (PyObject *)_PyHamt_Assoc(self, key, val);
 }
 
-static PyObject *
+PyObject *
 hamt_py_get(PyHamtObject *self, PyObject *args)
 {
     PyObject *key;
@@ -2768,25 +2768,25 @@ hamt_py_get(PyHamtObject *self, PyObject *args)
     }
 }
 
-static PyObject *
+PyObject *
 hamt_py_delete(PyHamtObject *self, PyObject *key)
 {
     return (PyObject *)_PyHamt_Without(self, key);
 }
 
-static PyObject *
+PyObject *
 hamt_py_items(PyHamtObject *self, PyObject *args)
 {
     return _PyHamt_NewIterItems(self);
 }
 
-static PyObject *
+PyObject *
 hamt_py_values(PyHamtObject *self, PyObject *args)
 {
     return _PyHamt_NewIterValues(self);
 }
 
-static PyObject *
+PyObject *
 hamt_py_keys(PyHamtObject *self, PyObject *Py_UNUSED(args))
 {
     return _PyHamt_NewIterKeys(self);
@@ -2799,7 +2799,6 @@ hamt_py_dump(PyHamtObject *self, PyObject *Py_UNUSED(args))
     return hamt_dump(self);
 }
 #endif
-
 
 static PyMethodDef PyHamt_methods[] = {
     {"set", _PyCFunction_CAST(hamt_py_set), METH_VARARGS, NULL},

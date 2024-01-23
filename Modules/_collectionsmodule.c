@@ -2499,75 +2499,150 @@ static PyType_Spec tuplegetter_spec = {
     .slots = tuplegetter_slots,
 };
 
-/* defaultdict type *********************************************************/
+/* frozenmap type *********************************************************/
+static PyObject *
+hamt_repr(PyObject *self);
+
+PyDoc_STRVAR(frozenmap_doc,
+"frozenmap() --> frozenmap\n\
+");
+
+PyDoc_STRVAR(frozenmap_including_doc,
+"Create a new frozenmap with key set to value");
+PyDoc_STRVAR(frozenmap_excluding_doc,
+"Create a new frozenmap with a key  excluded");
+PyDoc_STRVAR(frozenmap_get_doc,
+"Get value associated with key");
+PyDoc_STRVAR(frozenmap_keys_doc,"Get iterator over keys");
+PyDoc_STRVAR(frozenmap_values_doc,"Get iterator over values");
+PyDoc_STRVAR(frozenmap_items_doc,"Get iterator over (key, value) pair tuples");
+
+static PyMethodDef PyHamt_methods[] = {
+    {"including",               _PyCFunction_CAST(hamt_py_set),
+        METH_VARARGS,                  frozenmap_including_doc},
+    {"excluding",              _PyCFunction_CAST(hamt_py_delete),
+        METH_VARARGS,                  frozenmap_excluding_doc},
+    {"set", _PyCFunction_CAST(hamt_py_set), METH_VARARGS, frozenmap_including_doc},
+    {"get", _PyCFunction_CAST(hamt_py_get), METH_VARARGS, frozenmap_get_doc},
+    
+    {"delete", _PyCFunction_CAST(hamt_py_delete), METH_O, frozenmap_excluding_doc},
+    {"items", _PyCFunction_CAST(hamt_py_items), METH_NOARGS, frozenmap_items_doc},
+    {"keys", _PyCFunction_CAST(hamt_py_keys), METH_NOARGS, frozenmap_keys_doc},
+    {"values", _PyCFunction_CAST(hamt_py_values), METH_NOARGS, frozenmap_values_doc},
+    {NULL, NULL}
+};
+
+/* See comment in xxsubtype.c */
+#define DEFERRED_ADDRESS(ADDR) 0
+static PyType_Slot frozenmap_slots[] = {
+    {Py_tp_dealloc, (destructor)hamt_tp_dealloc},
+    {Py_tp_repr, hamt_repr},
+    {Py_tp_getattro, PyObject_GenericGetAttr},
+    {Py_tp_doc, (void *)frozenmap_doc},
+    {Py_tp_traverse, (traverseproc)hamt_tp_traverse},
+    {Py_tp_methods, PyHamt_methods},
+    // {Py_tp_init, defdict_init},
+    {Py_tp_richcompare, hamt_tp_richcompare},
+    {Py_tp_alloc, hamt_alloc},
+    {Py_tp_free, PyObject_GC_Del},
+    {Py_tp_new, _PyHamt_New},
+    // {Py_tp_len, _PyHamt_Len},
+    {0, NULL},
+};
 
 static PyType_Spec frozenmap_spec = {
     .name = "collections.frozenmap",
     .basicsize = sizeof(PyHamtObject),
     .flags = (Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC |
             Py_TPFLAGS_IMMUTABLETYPE),
-    .slots = defdict_slots,
+    .slots = frozenmap_slots,
 };
 
-PyDoc_STRVAR(frozenmap_doc,
-"frozenmap() --> frozenmap\n\
-");
 
-// static PyObject *
-// frozenmap_repr(PyHamtObject *dd)
-// {
-//     PyObject *baserepr;
-//     PyObject *defrepr;
-//     PyObject *result;
-//     baserepr = PyDict_Type.tp_repr((PyObject *)dd);
-//     if (baserepr == NULL)
-//         return NULL;
-//     if (dd->default_factory == NULL)
-//         defrepr = PyUnicode_FromString("None");
-//     else
-//     {
-//         int status = Py_ReprEnter(dd->default_factory);
-//         if (status != 0) {
-//             if (status < 0) {
-//                 Py_DECREF(baserepr);
-//                 return NULL;
-//             }
-//             defrepr = PyUnicode_FromString("...");
-//         }
-//         else
-//             defrepr = PyObject_Repr(dd->default_factory);
-//         Py_ReprLeave(dd->default_factory);
-//     }
-//     if (defrepr == NULL) {
-//         Py_DECREF(baserepr);
-//         return NULL;
-//     }
-//     result = PyUnicode_FromFormat("%s(%U, %U)",
-//                                   _PyType_Name(Py_TYPE(dd)),
-//                                   defrepr, baserepr);
-//     Py_DECREF(defrepr);
-//     Py_DECREF(baserepr);
-//     return result;
-// }
+static PyObject *
+hamt_repr(PyObject *self)
+{
+    PyHamtObject *mp = (PyHamtObject *)self;
+    Py_ssize_t i;
+    PyObject *key = NULL, *value = NULL;
+    _PyUnicodeWriter writer;
+    int first;
 
-// /* See comment in xxsubtype.c */
-// #define DEFERRED_ADDRESS(ADDR) 0
+    i = Py_ReprEnter((PyObject *)mp);
+    if (i != 0) {
+        return i > 0 ? PyUnicode_FromString("{...}") : NULL;
+    }
 
-// static PyType_Slot frozenmap_slots[] = {
-//     {Py_tp_dealloc, defdict_dealloc},
-//     {Py_tp_repr, defdict_repr},
-//     {Py_nb_or, defdict_or},
-//     {Py_tp_getattro, PyObject_GenericGetAttr},
-//     {Py_tp_doc, (void *)defdict_doc},
-//     {Py_tp_traverse, defdict_traverse},
-//     {Py_tp_clear, defdict_tp_clear},
-//     {Py_tp_methods, defdict_methods},
-//     {Py_tp_members, defdict_members},
-//     {Py_tp_init, defdict_init},
-//     {Py_tp_alloc, PyType_GenericAlloc},
-//     {Py_tp_free, PyObject_GC_Del},
-//     {0, NULL},
-// };
+    if (mp->h_count == 0) {
+        Py_ReprLeave((PyObject *)mp);
+        return PyUnicode_FromString("{}");
+    }
+
+    _PyUnicodeWriter_Init(&writer);
+    writer.overallocate = 1;
+    /* "{" + "1: 2" + ", 3: 4" * (len - 1) + "}" */
+    writer.min_length = 1 + 4 + (2 + 4) * (mp->h_count - 1) + 1;
+
+    if (_PyUnicodeWriter_WriteChar(&writer, '{') < 0)
+        goto error;
+
+    /* Do repr() on each key+value pair, and insert ": " between them.
+       Note that repr may mutate the dict. */
+    // i = 0;
+    // first = 1;
+    // while (PyDict_Next((PyObject *)mp, &i, &key, &value)) {
+    //     PyObject *s;
+    //     int res;
+
+    //     /* Prevent repr from deleting key or value during key format. */
+    //     Py_INCREF(key);
+    //     Py_INCREF(value);
+
+    //     if (!first) {
+    //         if (_PyUnicodeWriter_WriteASCIIString(&writer, ", ", 2) < 0)
+    //             goto error;
+    //     }
+    //     first = 0;
+
+    //     s = PyObject_Repr(key);
+    //     if (s == NULL)
+    //         goto error;
+    //     res = _PyUnicodeWriter_WriteStr(&writer, s);
+    //     Py_DECREF(s);
+    //     if (res < 0)
+    //         goto error;
+
+    //     if (_PyUnicodeWriter_WriteASCIIString(&writer, ": ", 2) < 0)
+    //         goto error;
+
+    //     s = PyObject_Repr(value);
+    //     if (s == NULL)
+    //         goto error;
+    //     res = _PyUnicodeWriter_WriteStr(&writer, s);
+    //     Py_DECREF(s);
+    //     if (res < 0)
+    //         goto error;
+
+    //     Py_CLEAR(key);
+    //     Py_CLEAR(value);
+    // }
+
+    writer.overallocate = 0;
+    if (_PyUnicodeWriter_WriteChar(&writer, '}') < 0)
+        goto error;
+
+    Py_ReprLeave((PyObject *)mp);
+
+    return _PyUnicodeWriter_Finish(&writer);
+
+error:
+    Py_ReprLeave((PyObject *)mp);
+    _PyUnicodeWriter_Dealloc(&writer);
+    Py_XDECREF(key);
+    Py_XDECREF(value);
+    return NULL;
+}
+
 
 /* module level code ********************************************************/
 
