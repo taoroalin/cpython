@@ -2831,44 +2831,43 @@ hamt_repr(PyObject *self)
 
     /* Do repr() on each key+value pair, and insert ": " between them.
        Note that repr may mutate the dict. */
-    // i = 0;
-    // first = 1;
-    // while (PyDict_Next((PyObject *)mp, &i, &key, &value)) {
-    //     PyObject *s;
-    //     int res;
+    PyHamtIterator * iterator = hamt_baseiter_new(
+        &_PyHamtItems_Type, hamt_iter_yield_items, mp);
+        
+    i = 0;
+    first = 1;
+    while (hamt_iterator_next(&iterator->hi_iter, &key, &value) != I_END) {
+        PyObject *s;
+        int res;
 
-    //     /* Prevent repr from deleting key or value during key format. */
-    //     Py_INCREF(key);
-    //     Py_INCREF(value);
+        if (!first) {
+            if (_PyUnicodeWriter_WriteASCIIString(&writer, ", ", 2) < 0)
+                goto error;
+        }
+        first = 0;
 
-    //     if (!first) {
-    //         if (_PyUnicodeWriter_WriteASCIIString(&writer, ", ", 2) < 0)
-    //             goto error;
-    //     }
-    //     first = 0;
+        s = PyObject_Repr(key);
+        if (s == NULL)
+            goto error;
+        res = _PyUnicodeWriter_WriteStr(&writer, s);
+        Py_DECREF(s);
+        if (res < 0)
+            goto error;
 
-    //     s = PyObject_Repr(key);
-    //     if (s == NULL)
-    //         goto error;
-    //     res = _PyUnicodeWriter_WriteStr(&writer, s);
-    //     Py_DECREF(s);
-    //     if (res < 0)
-    //         goto error;
+        if (_PyUnicodeWriter_WriteASCIIString(&writer, ": ", 2) < 0)
+            goto error;
 
-    //     if (_PyUnicodeWriter_WriteASCIIString(&writer, ": ", 2) < 0)
-    //         goto error;
+        s = PyObject_Repr(value);
+        if (s == NULL)
+            goto error;
+        res = _PyUnicodeWriter_WriteStr(&writer, s);
+        Py_DECREF(s);
+        if (res < 0)
+            goto error;
 
-    //     s = PyObject_Repr(value);
-    //     if (s == NULL)
-    //         goto error;
-    //     res = _PyUnicodeWriter_WriteStr(&writer, s);
-    //     Py_DECREF(s);
-    //     if (res < 0)
-    //         goto error;
-
-    //     Py_CLEAR(key);
-    //     Py_CLEAR(value);
-    // }
+        Py_CLEAR(key);
+        Py_CLEAR(value);
+    }
 
     writer.overallocate = 0;
     if (_PyUnicodeWriter_WriteChar(&writer, '}') < 0)
