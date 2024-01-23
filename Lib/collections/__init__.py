@@ -18,10 +18,12 @@ __all__ = [
     'ChainMap',
     'Counter',
     'OrderedDict',
+    'OrderedDict',
     'UserDict',
     'UserList',
     'UserString',
     'defaultdict',
+    'frozenmap',
     'deque',
     'namedtuple',
 ]
@@ -54,7 +56,10 @@ try:
     from _collections import defaultdict
 except ImportError:
     pass
-
+try:
+    from _collections import frozenmap
+except ImportError:
+    pass
 
 ################################################################################
 ### OrderedDict

@@ -4,12 +4,14 @@
 #include "pycore_long.h"          // _PyLong_GetZero()
 #include "pycore_moduleobject.h"  // _PyModule_GetState()
 #include "pycore_typeobject.h"    // _PyType_GetModuleState()
+#include "pycore_hamt.h"
 
 #include <stddef.h>
 
 typedef struct {
     PyTypeObject *deque_type;
     PyTypeObject *defdict_type;
+    PyTypeObject *frozenmap_type;
     PyTypeObject *dequeiter_type;
     PyTypeObject *dequereviter_type;
     PyTypeObject *tuplegetter_type;
@@ -1675,7 +1677,7 @@ static PyType_Spec deque_spec = {
     .basicsize = sizeof(dequeobject),
     .flags = (Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
               Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_SEQUENCE |
-              Py_TPFLAGS_IMMUTABLETYPE),
+            Py_TPFLAGS_IMMUTABLETYPE),
     .slots = deque_slots,
 };
 
@@ -1827,7 +1829,7 @@ static PyType_Spec dequeiter_spec = {
     .name = "collections._deque_iterator",
     .basicsize = sizeof(dequeiterobject),
     .flags = (Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC |
-              Py_TPFLAGS_IMMUTABLETYPE),
+            Py_TPFLAGS_IMMUTABLETYPE),
     .slots = dequeiter_slots,
 };
 
@@ -1924,7 +1926,7 @@ static PyType_Spec dequereviter_spec = {
     .name = "collections._deque_reverse_iterator",
     .basicsize = sizeof(dequeiterobject),
     .flags = (Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC |
-              Py_TPFLAGS_IMMUTABLETYPE),
+            Py_TPFLAGS_IMMUTABLETYPE),
     .slots = dequereviter_slots,
 };
 
@@ -2229,7 +2231,7 @@ static PyType_Spec defdict_spec = {
     .name = "collections.defaultdict",
     .basicsize = sizeof(defdictobject),
     .flags = (Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC |
-              Py_TPFLAGS_IMMUTABLETYPE),
+            Py_TPFLAGS_IMMUTABLETYPE),
     .slots = defdict_slots,
 };
 
@@ -2493,10 +2495,79 @@ static PyType_Spec tuplegetter_spec = {
     .name = "collections._tuplegetter",
     .basicsize = sizeof(_tuplegetterobject),
     .flags = (Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC |
-              Py_TPFLAGS_IMMUTABLETYPE),
+            Py_TPFLAGS_IMMUTABLETYPE),
     .slots = tuplegetter_slots,
 };
 
+/* defaultdict type *********************************************************/
+
+static PyType_Spec frozenmap_spec = {
+    .name = "collections.frozenmap",
+    .basicsize = sizeof(PyHamtObject),
+    .flags = (Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC |
+            Py_TPFLAGS_IMMUTABLETYPE),
+    .slots = defdict_slots,
+};
+
+PyDoc_STRVAR(frozenmap_doc,
+"frozenmap() --> frozenmap\n\
+");
+
+// static PyObject *
+// frozenmap_repr(PyHamtObject *dd)
+// {
+//     PyObject *baserepr;
+//     PyObject *defrepr;
+//     PyObject *result;
+//     baserepr = PyDict_Type.tp_repr((PyObject *)dd);
+//     if (baserepr == NULL)
+//         return NULL;
+//     if (dd->default_factory == NULL)
+//         defrepr = PyUnicode_FromString("None");
+//     else
+//     {
+//         int status = Py_ReprEnter(dd->default_factory);
+//         if (status != 0) {
+//             if (status < 0) {
+//                 Py_DECREF(baserepr);
+//                 return NULL;
+//             }
+//             defrepr = PyUnicode_FromString("...");
+//         }
+//         else
+//             defrepr = PyObject_Repr(dd->default_factory);
+//         Py_ReprLeave(dd->default_factory);
+//     }
+//     if (defrepr == NULL) {
+//         Py_DECREF(baserepr);
+//         return NULL;
+//     }
+//     result = PyUnicode_FromFormat("%s(%U, %U)",
+//                                   _PyType_Name(Py_TYPE(dd)),
+//                                   defrepr, baserepr);
+//     Py_DECREF(defrepr);
+//     Py_DECREF(baserepr);
+//     return result;
+// }
+
+// /* See comment in xxsubtype.c */
+// #define DEFERRED_ADDRESS(ADDR) 0
+
+// static PyType_Slot frozenmap_slots[] = {
+//     {Py_tp_dealloc, defdict_dealloc},
+//     {Py_tp_repr, defdict_repr},
+//     {Py_nb_or, defdict_or},
+//     {Py_tp_getattro, PyObject_GenericGetAttr},
+//     {Py_tp_doc, (void *)defdict_doc},
+//     {Py_tp_traverse, defdict_traverse},
+//     {Py_tp_clear, defdict_tp_clear},
+//     {Py_tp_methods, defdict_methods},
+//     {Py_tp_members, defdict_members},
+//     {Py_tp_init, defdict_init},
+//     {Py_tp_alloc, PyType_GenericAlloc},
+//     {Py_tp_free, PyObject_GC_Del},
+//     {0, NULL},
+// };
 
 /* module level code ********************************************************/
 
@@ -2506,6 +2577,7 @@ collections_traverse(PyObject *mod, visitproc visit, void *arg)
     collections_state *state = get_module_state(mod);
     Py_VISIT(state->deque_type);
     Py_VISIT(state->defdict_type);
+    Py_VISIT(state->frozenmap_type);
     Py_VISIT(state->dequeiter_type);
     Py_VISIT(state->dequereviter_type);
     Py_VISIT(state->tuplegetter_type);
@@ -2518,6 +2590,7 @@ collections_clear(PyObject *mod)
     collections_state *state = get_module_state(mod);
     Py_CLEAR(state->deque_type);
     Py_CLEAR(state->defdict_type);
+    Py_CLEAR(state->frozenmap_type);
     Py_CLEAR(state->dequeiter_type);
     Py_CLEAR(state->dequereviter_type);
     Py_CLEAR(state->tuplegetter_type);
@@ -2557,6 +2630,7 @@ collections_exec(PyObject *module) {
     collections_state *state = get_module_state(module);
     ADD_TYPE(module, &deque_spec, state->deque_type, NULL);
     ADD_TYPE(module, &defdict_spec, state->defdict_type, &PyDict_Type);
+    ADD_TYPE(module, &frozenmap_spec, state->frozenmap_type, NULL);
     ADD_TYPE(module, &dequeiter_spec, state->dequeiter_type, NULL);
     ADD_TYPE(module, &dequereviter_spec, state->dequereviter_type, NULL);
     ADD_TYPE(module, &tuplegetter_spec, state->tuplegetter_type, NULL);
