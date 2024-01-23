@@ -3,11 +3,14 @@ import gc
 import pickle
 import random
 import sys
-import unittest
 import weakref
 from collections import frozenmap
 from unittest import TestCase
-    
+import unittest
+
+# import sys
+# sys.path.insert(0, "/opt/homebrew/Cellar/python@3.11/3.11.4_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/immutables")
+
 class HashKey:
     _crasher = None
 
@@ -1457,17 +1460,9 @@ class BaseMapTest:
         m = self.Map(foo="bar")
         TestCase().assertTrue("foo" in m.keys())
 
+class PyMapTest(BaseMapTest, unittest.TestCase):
 
-try:
-    from immutables._map import Map as CMap
-except ImportError:
-    CMap = None
-
-
-@unittest.skipIf(CMap is None, 'C Map is not available')
-class CMapTest(BaseMapTest, unittest.TestCase):
-
-    Map = CMap
+    Map = frozenmap
 
 
 if __name__ == "__main__":
