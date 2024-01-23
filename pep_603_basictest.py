@@ -8,7 +8,8 @@ h = frozenmap()
 print("inited", h)
 print("members", dir(h))
 print(len(h))
-h2 = h.including('a', 'b')
+print(h.get("hi"))
+h2 = h.set('a', 'b')
 print("setted")
 assert h is not h2
 assert len(h) == 0

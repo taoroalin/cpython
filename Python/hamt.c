@@ -2800,16 +2800,28 @@ hamt_py_dump(PyHamtObject *self, PyObject *Py_UNUSED(args))
 }
 #endif
 
+PyDoc_STRVAR(frozenmap_including_doc,
+"Create a new frozenmap with key set to value");
+PyDoc_STRVAR(frozenmap_excluding_doc,
+"Create a new frozenmap with a key  excluded");
+PyDoc_STRVAR(frozenmap_get_doc,
+"Get value associated with key");
+PyDoc_STRVAR(frozenmap_keys_doc,"Get iterator over keys");
+PyDoc_STRVAR(frozenmap_values_doc,"Get iterator over values");
+PyDoc_STRVAR(frozenmap_items_doc,"Get iterator over (key, value) pair tuples");
+
 static PyMethodDef PyHamt_methods[] = {
-    {"set", _PyCFunction_CAST(hamt_py_set), METH_VARARGS, NULL},
-    {"get", _PyCFunction_CAST(hamt_py_get), METH_VARARGS, NULL},
-    {"delete", _PyCFunction_CAST(hamt_py_delete), METH_O, NULL},
-    {"items", _PyCFunction_CAST(hamt_py_items), METH_NOARGS, NULL},
-    {"keys", _PyCFunction_CAST(hamt_py_keys), METH_NOARGS, NULL},
-    {"values", _PyCFunction_CAST(hamt_py_values), METH_NOARGS, NULL},
-#ifdef Py_DEBUG
-    {"__dump__", _PyCFunction_CAST(hamt_py_dump), METH_NOARGS, NULL},
-#endif
+    {"including",               _PyCFunction_CAST(hamt_py_set),
+        METH_VARARGS,                  frozenmap_including_doc},
+    {"excluding",              _PyCFunction_CAST(hamt_py_delete),
+        METH_VARARGS,                  frozenmap_excluding_doc},
+    {"set", _PyCFunction_CAST(hamt_py_set), METH_VARARGS, frozenmap_including_doc},
+    {"get", _PyCFunction_CAST(hamt_py_get), METH_VARARGS, frozenmap_get_doc},
+    
+    {"delete", _PyCFunction_CAST(hamt_py_delete), METH_O, frozenmap_excluding_doc},
+    {"items", _PyCFunction_CAST(hamt_py_items), METH_NOARGS, frozenmap_items_doc},
+    {"keys", _PyCFunction_CAST(hamt_py_keys), METH_NOARGS, frozenmap_keys_doc},
+    {"values", _PyCFunction_CAST(hamt_py_values), METH_NOARGS, frozenmap_values_doc},
     {NULL, NULL}
 };
 

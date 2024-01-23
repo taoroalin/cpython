@@ -2507,31 +2507,6 @@ PyDoc_STRVAR(frozenmap_doc,
 "frozenmap() --> frozenmap\n\
 ");
 
-PyDoc_STRVAR(frozenmap_including_doc,
-"Create a new frozenmap with key set to value");
-PyDoc_STRVAR(frozenmap_excluding_doc,
-"Create a new frozenmap with a key  excluded");
-PyDoc_STRVAR(frozenmap_get_doc,
-"Get value associated with key");
-PyDoc_STRVAR(frozenmap_keys_doc,"Get iterator over keys");
-PyDoc_STRVAR(frozenmap_values_doc,"Get iterator over values");
-PyDoc_STRVAR(frozenmap_items_doc,"Get iterator over (key, value) pair tuples");
-
-static PyMethodDef PyHamt_methods[] = {
-    {"including",               _PyCFunction_CAST(hamt_py_set),
-        METH_VARARGS,                  frozenmap_including_doc},
-    {"excluding",              _PyCFunction_CAST(hamt_py_delete),
-        METH_VARARGS,                  frozenmap_excluding_doc},
-    {"set", _PyCFunction_CAST(hamt_py_set), METH_VARARGS, frozenmap_including_doc},
-    {"get", _PyCFunction_CAST(hamt_py_get), METH_VARARGS, frozenmap_get_doc},
-    
-    {"delete", _PyCFunction_CAST(hamt_py_delete), METH_O, frozenmap_excluding_doc},
-    {"items", _PyCFunction_CAST(hamt_py_items), METH_NOARGS, frozenmap_items_doc},
-    {"keys", _PyCFunction_CAST(hamt_py_keys), METH_NOARGS, frozenmap_keys_doc},
-    {"values", _PyCFunction_CAST(hamt_py_values), METH_NOARGS, frozenmap_values_doc},
-    {NULL, NULL}
-};
-
 /* See comment in xxsubtype.c */
 #define DEFERRED_ADDRESS(ADDR) 0
 static PyType_Slot frozenmap_slots[] = {
@@ -2540,7 +2515,7 @@ static PyType_Slot frozenmap_slots[] = {
     {Py_tp_getattro, PyObject_GenericGetAttr},
     {Py_tp_doc, (void *)frozenmap_doc},
     {Py_tp_traverse, (traverseproc)hamt_tp_traverse},
-    {Py_tp_methods, PyHamt_methods},
+    // {Py_tp_methods, PyHamt_methods},
     // {Py_tp_init, defdict_init},
     {Py_tp_richcompare, hamt_tp_richcompare},
     {Py_tp_alloc, hamt_alloc},
